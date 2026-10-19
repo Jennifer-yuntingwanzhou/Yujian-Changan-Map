@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1.0" />
+<title>语见长安 · 长安校区地图</title>
+<style>
+:root{font-family:system-ui,-apple-system,"Noto Sans CJK SC","Microsoft YaHei",Arial,sans-serif;color:#193933;background:#eff5f2;font-synthesis:none}
+*{box-sizing:border-box}body{margin:0}button,select,input{font:inherit}button{cursor:pointer}
+header{background:linear-gradient(120deg,#12574d,#1c7669);color:#fff;padding:18px 28px;display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap}
+header h1{font-size:clamp(21px,2.6vw,32px);line-height:1.3;margin:0;letter-spacing:.02em}header p{margin:3px 0 0;color:#d8efea;font-size:13px}
+header .pill{border:1px solid #b7e6da;padding:8px 12px;border-radius:999px;font-size:12px;white-space:nowrap}
+.layout{max-width:1540px;margin:auto;padding:18px;display:grid;grid-template-columns:minmax(0,1fr) 288px;gap:16px}
+.card{background:white;border:1px solid #e0ebe6;border-radius:17px;box-shadow:0 3px 20px #1b554b0a;overflow:hidden}
+.controls{padding:16px;display:flex;align-items:flex-end;gap:11px;flex-wrap:wrap}
+.control{display:grid;gap:5px;flex:1 1 170px;min-width:145px}label{font-size:12px;font-weight:700;color:#477066}
+select{background:white;border:1px solid #cbded7;border-radius:9px;padding:10px 11px;width:100%;color:#1b4038;max-width:100%}
+select:focus-visible,button:focus-visible{outline:3px solid #94d1b9;outline-offset:2px}
+.primary{background:#137a6b;color:#fff;border:0;border-radius:10px;padding:11px 17px;font-weight:700}
+.primary:hover{background:#0e6659}.secondary{border:1px solid #caddd5;background:#f6faf8;color:#1d6054;border-radius:9px;padding:9px 12px;font-weight:600}
+#mapShell{padding:0 16px 14px}.mapTop{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 0 12px;flex-wrap:wrap}
+.mapTop .legend{display:flex;gap:13px;flex-wrap:wrap;font-size:11px;color:#58736a}.key{display:inline-flex;align-items:center;gap:5px}.dot{height:9px;width:9px;border-radius:3px;background:#e1ad73}.dot.office{background:#ebc388}.dot.dorm{background:#c4ded8}.dot.service{background:#91c8dd}.dot.green{background:#b7dfbc}
+.mapActions{display:flex;gap:6px}.mapActions button{border:1px solid #cbded7;background:#fff;color:#27675e;border-radius:7px;width:36px;height:34px;font-size:17px}.mapActions button:last-child{width:auto;font-size:12px;padding:0 11px}
+.mapViewport{position:relative;background:#edf1e9;border:1px solid #d5e4db;border-radius:13px;overflow:hidden;height:min(75vh,850px);min-height:450px;touch-action:none;cursor:grab}
+.mapViewport:active{cursor:grabbing}#campus{display:block;width:100%;height:100%;user-select:none}
+.mapTag{font-size:12px;fill:#45675e;letter-spacing:.03em}.building{cursor:pointer;stroke:#917754;stroke-width:1.75;vector-effect:non-scaling-stroke;transition:filter .12s}
+.building:hover{filter:brightness(1.09)}
+.building.selected-start{stroke:#138d72;stroke-width:5}
+.building.selected-end{stroke:#e06a40;stroke-width:5}
+/* Clicked place: visibly highlighted without changing routing endpoints. */
+.building.selected-active{stroke:#165fba;stroke-width:5;filter:drop-shadow(0 1px 5px #216fbd7a)}
+[data-place]:focus-visible{outline:none}
+[data-place]:focus-visible .building{stroke:#165fba;stroke-width:5;filter:drop-shadow(0 0 6px #165fba80)}
+.building.teaching{fill:#e9b870}.building.office{fill:#f1cb86}.building.lab{fill:#e8b573}.building.dorm{fill:#c0dbd6;stroke:#7da5a0}.building.food{fill:#efa58f;stroke:#c87e69}.building.service{fill:#80bfdb;stroke:#5e98b1}.building.sports{fill:#a5e3c2;stroke:#6caf91}.building.other{fill:#e7dbb9;stroke:#a69a78}
+.place-label{text-anchor:middle;dominant-baseline:middle;font-size:14px;font-weight:650;fill:#35504a;pointer-events:none;paint-order:stroke;stroke:#fffdf5;stroke-width:3;stroke-linejoin:round}
+.place-label.code{font-size:17px}.place-label.small{font-size:12px}.place-label.tiny{font-size:10px}.place-label.light{fill:#fff;stroke:#18574f}
+.route{fill:none;stroke:#1686df;stroke-width:8;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:14 9;vector-effect:non-scaling-stroke;filter:drop-shadow(0 1px 2px #fff)}
+.map-pin{stroke:#fff;stroke-width:3;vector-effect:non-scaling-stroke}
+.routeStats{padding:13px 17px;border-top:1px solid #e1ebe7;background:#f9fcfa;font-size:13px;line-height:1.65;color:#31584e}
+.routeStats strong{color:#114f49}.side{display:flex;flex-direction:column;gap:14px;min-width:0}
+.side .card{padding:17px}.side h2{font-size:16px;margin:0 0 12px}.side p{font-size:13px;color:#537067;line-height:1.7;margin:8px 0}
+.detail-name{font-size:18px;font-weight:750;margin:5px 0}.chip{display:inline-flex;border-radius:999px;background:#e7f3ed;color:#1c685d;padding:5px 8px;font-size:11px}
+.place-desc{margin:11px 0!important;color:#34594e!important;line-height:1.75!important}
+.place-code{font-size:11px;color:#779087!important;margin:4px 0!important;letter-spacing:.02em}
+.place-status{font-size:11px;color:#9c683c!important;background:#fff6e9;padding:8px;border-radius:8px}
+.photo-note{font-size:11px;color:#79918a!important}
+.mini-actions{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}.mini-actions button{font-size:12px;padding:8px 10px;border-radius:8px;border:1px solid #c3dad0;background:#f4faf7;color:#1c695c}
+.photoBox{display:none;margin-top:12px}.photoBox img{max-width:100%;border-radius:9px;max-height:190px;object-fit:cover}
+.help{background:#f3faf7;padding:10px 12px;border-radius:10px;font-size:12px;color:#557267;line-height:1.65}
+#error{color:#b8392f;font-size:12px;white-space:pre-line}.small-note{font-size:11px;color:#788b85!important}
+@media(max-width:1050px){.layout{grid-template-columns:1fr}.side{display:grid;grid-template-columns:1fr 1fr}.mapViewport{height:66vh}}
+@media(max-width:640px){.layout{padding:9px;gap:10px}.controls{padding:11px;gap:9px}.control{min-width:44%;flex-basis:44%}.primary{width:100%}.side{display:flex}.mapViewport{min-height:360px;height:59vh}#mapShell{padding:0 9px 9px}.mapTop .legend{font-size:10px;gap:8px}header{padding:15px}.pill{display:none}}
+
+.building.teaching,.building.lab{fill:#efd3a5;stroke:#a7865c}.building.office{fill:#e8c593;stroke:#a7865c}.building.service{fill:#b6d6df;stroke:#769eaa}.building.dorm{fill:#c5ded4;stroke:#86a99d}.building.food{fill:#e9b5a0;stroke:#b7806d}
+[data-place="studentWalk"] .building{fill:#f3e8cb;stroke:#bba779}
+.building{filter:drop-shadow(2px 3px 1px #465b4520)}
+.sub-label{font-size:10px;fill:#52665b;text-anchor:middle;paint-order:stroke;stroke:#fff9eb;stroke-width:2;pointer-events:none}
+</style>
+</head>
+<body>
+<header><div><h1>语见长安 <span style="font-weight:400">· Campus Navigator</span></h1><p id="subtitle">西安外国语大学 · 长安校区智慧导览</p></div><span class="pill" id="badge">SVG · 六语言 · 任意地点导航</span></header>
+<main class="layout">
+<section class="card">
+<div class="controls">
+<div class="control"><label for="start" id="startLab">起点</label><select id="start"></select></div>
+<div class="control"><label for="end" id="endLab">终点</label><select id="end"></select></div>
+<div class="control" style="flex:0 1 148px"><label for="lang" id="langLab">语言</label><select id="lang"><option value="zh">中文</option><option value="en">English</option><option value="ja">日本語</option><option value="ru">Русский</option><option value="fr">Français</option><option value="ko">한국어</option></select></div>
+<button class="primary" id="routeBtn">生成路线</button>
+</div>
+<div id="mapShell">
+<div class="mapTop"><div class="legend"><span class="key"><i class="dot"></i><span id="typeTeach">教学楼</span></span><span class="key"><i class="dot office"></i><span id="typeOffice">办公楼</span></span><span class="key"><i class="dot dorm"></i><span id="typeDorm">宿舍</span></span><span class="key"><i class="dot service"></i><span id="typeService">公共设施</span></span><span class="key"><i class="dot green"></i><span id="typeGreen">绿化</span></span></div><div class="mapActions"><button title="Zoom in" id="plus">+</button><button title="Zoom out" id="minus">−</button><button title="Fit map" id="reset">⤢</button></div></div>
+<div id="viewport" class="mapViewport"><svg xmlns="http://www.w3.org/2000/svg" id="campus" viewBox="0 0 1056 1408" preserveAspectRatio="xMidYMid meet" aria-label="Interactive campus vector map"></svg></div>
+</div>
+<div class="routeStats" id="routeInfo" aria-live="polite"></div>
+</section>
+<aside class="side">
+<section class="card"><h2 id="detailHead">地点信息</h2><div id="detail"><p>点击地图上的建筑，查看名称并设置为起点或终点。</p></div><div id="photoBox" class="photoBox"><img id="photo" alt="Location photo"></div><div class="mini-actions"><button id="setStart">设为起点</button><button id="setEnd">设为终点</button></div></section>
+<section class="card"><h2 id="usageHead">使用说明</h2><div class="help" id="help">地图和道路由代码绘制。点击建筑查看信息，选择起终点后显示蓝色示意路线。支持鼠标拖动、滚轮缩放和触屏操作。</div><p class="small-note" id="disclaimer">本图依据校方简化示意图重新描绘，非测绘地图。</p><p id="error"></p></section>
+</aside>
+</main>
+<script>
+"use strict";
+// ---------- 1. Six-language dictionaries. ----------
+const UI={
+ zh:{subtitle:'西安外国语大学 · 长安校区智慧导览',badge:'SVG · 六语言 · 任意地点导航',start:'起点',end:'终点',lang:'语言',route:'生成路线',teach:'教学楼',office:'办公楼',dorm:'宿舍',service:'公共设施',green:'绿化',detail:'地点信息',helpHead:'使用说明',help:'点击建筑查看名称，选择任意两处可计算简化道路路线。滚轮缩放，拖动平移，触屏也可操作。',disclaimer:'基于校方示意图重绘，不是测绘图。',setStart:'设为起点',setEnd:'设为终点',intro:'点击任意建筑查看信息并设置起终点。',routeInfo:'蓝色路线为基于人工绘制路网的拓扑示意，不表示实际距离或通行时间。',same:'起点与终点相同，请选择不同地点。',none:'两地点之间暂无连通路线，请检查数据。',success:'已计算示意路线',viaSouth:'路线经由南门通往校外校医院。',category:'分类',steps:'路网节点',verify:'待实地核验',photo:'点击地点查看实景照片（需要另行添加图片文件）',road:'校园步行路',west:'西',north:'北',gate:'校门'},
+ en:{subtitle:"Xi’an International Studies University · Chang’an Campus",badge:'SVG · Six languages · Campus routing',start:'From',end:'To',lang:'Language',route:'Show route',teach:'Academic',office:'Offices',dorm:'Dormitories',service:'Facilities',green:'Green spaces',detail:'Place details',helpHead:'How to use',help:'Select any two locations to highlight a simplified walking route. Click a building for details. Scroll to zoom, drag to pan, or use touch gestures.',disclaimer:'Redrawn from an official schematic, not a surveyed map. Gates, medical-center entrance and paths require on-site verification.',setStart:'Set as start',setEnd:'Set as destination',intro:'Select any building to view details or set endpoints.',routeInfo:'Blue line is a schematic route on a manually authored network, not a measured distance or travel time.',same:'Choose two different places.',none:'No connected route. Check path data.',success:'Schematic route found',viaSouth:'Route exits via the South Gate to the off-campus medical center.',category:'Category',steps:'Network nodes',verify:'Requires on-site verification',photo:'Photos can be added later',road:'Walking path',west:'W',north:'N',gate:'Gate'},
+ ja:{subtitle:'西安外国語大学 · 長安キャンパス案内',badge:'SVG · 6言語 · キャンパス経路',start:'出発地',end:'目的地',lang:'言語',route:'ルート表示',teach:'教学棟',office:'事務棟',dorm:'学生寮',service:'公共施設',green:'緑地',detail:'施設情報',helpHead:'使い方',help:'任意の2施設を選ぶと、歩行ルートの概略を表示します。建物をクリックして情報を見ることもできます。',disclaimer:'大学の概略図に基づく図です。実測地図ではありません。門や診療所の入口、通路は現地確認が必要です。',setStart:'出発地に設定',setEnd:'目的地に設定',intro:'建物をクリックして場所を選択します。',routeInfo:'青線は手入力した経路ネットワークに基づく概略です。距離や所要時間ではありません。',same:'異なる2地点を選んでください。',none:'経路が見つかりません。',success:'概略ルートを表示',viaSouth:'南門からキャンパス外の診療所へ向かいます。',category:'分類',steps:'経路ノード',verify:'現地確認が必要',photo:'写真は後から追加できます',road:'歩行路',west:'西',north:'北',gate:'門'},
+ ru:{subtitle:'Сианьский университет иностранных языков · Кампус Чанъань',badge:'SVG · 6 языков · Маршруты',start:'Откуда',end:'Куда',lang:'Язык',route:'Показать путь',teach:'Учебные корпуса',office:'Офисы',dorm:'Общежития',service:'Объекты',green:'Зелёные зоны',detail:'Информация',helpHead:'Инструкция',help:'Выберите любые два здания, чтобы увидеть схематичный пешеходный маршрут. Нажмите на здание для информации.',disclaimer:'Схема перерисована по плану университета, но не является геодезической картой. Входы и дорожки требуют проверки на месте.',setStart:'Точка отправления',setEnd:'Пункт назначения',intro:'Нажмите на здание, чтобы выбрать пункт.',routeInfo:'Синяя линия — схематичный маршрут, а не точное расстояние или время.',same:'Выберите разные места.',none:'Маршрут не найден.',success:'Маршрут построен',viaSouth:'Маршрут проходит через Южные ворота к медпункту за пределами кампуса.',category:'Тип',steps:'Узлы',verify:'Нужна проверка на месте',photo:'Фотографии можно добавить позже',road:'Пешеходная дорожка',west:'З',north:'С',gate:'Ворота'},
+ fr:{subtitle:'Université des Langues Étrangères de Xi’an · Campus de Chang’an',badge:'SVG · Six langues · Itinéraires',start:'Départ',end:'Arrivée',lang:'Langue',route:'Tracer',teach:'Enseignement',office:'Bureaux',dorm:'Résidences',service:'Services',green:'Espaces verts',detail:'Lieu sélectionné',helpHead:'Mode d’emploi',help:'Sélectionnez deux bâtiments pour afficher un itinéraire piéton schématique. Cliquez sur les bâtiments pour les détails.',disclaimer:'Plan redessiné d’après un schéma universitaire, non topographique. Accès et chemins à vérifier sur place.',setStart:'Définir le départ',setEnd:'Définir l’arrivée',intro:'Cliquez sur un bâtiment pour voir ses informations.',routeInfo:'Le tracé bleu est schématique, sans distance ni durée vérifiées.',same:'Choisissez deux lieux différents.',none:'Aucun itinéraire trouvé.',success:'Itinéraire schématique',viaSouth:'L’itinéraire sort par la porte sud vers le centre médical hors campus.',category:'Catégorie',steps:'Nœuds',verify:'À vérifier sur place',photo:'Des photos pourront être ajoutées',road:'Chemin piéton',west:'O',north:'N',gate:'Porte'},
+ ko:{subtitle:'시안외국어대학교 · 창안캠퍼스 안내',badge:'SVG · 6개 언어 · 캠퍼스 길찾기',start:'출발지',end:'도착지',lang:'언어',route:'경로 보기',teach:'강의동',office:'사무동',dorm:'기숙사',service:'공공시설',green:'녹지',detail:'장소 정보',helpHead:'이용 안내',help:'두 건물을 선택하면 간략한 도보 경로를 보여 줍니다. 건물을 누르면 상세 정보를 볼 수 있습니다.',disclaimer:'학교 안내도를 바탕으로 다시 그린 개략도입니다. 출입구와 보행로는 현장 확인이 필요합니다.',setStart:'출발지 설정',setEnd:'도착지 설정',intro:'건물을 눌러 정보를 확인하세요.',routeInfo:'파란 선은 수작업 경로망에 기반한 개략 경로이며 실제 거리나 시간은 아닙니다.',same:'서로 다른 장소를 선택하세요.',none:'연결된 경로가 없습니다.',success:'개략 경로 생성',viaSouth:'남문을 지나 캠퍼스 밖 의료센터로 이동합니다.',category:'유형',steps:'노드',verify:'현장 확인 필요',photo:'사진은 추후 추가할 수 있습니다',road:'보행로',west:'서',north:'북',gate:'교문'}
+};
+function names(zh,en,ja,ru,fr,ko){return {zh,en,ja,ru,fr,ko};}
+function nWord(id){return NAMES[id]||null;}
+const NAMES={
+ library:names('图书馆','Library','図書館','Библиотека','Bibliothèque','도서관'),
+ hospital:names('校医院','Campus Medical Center','大学診療所','Университетский медпункт','Centre médical universitaire','대학 보건소'),
+ southGate:names('南门','South Gate','南門','Южные ворота','Porte sud','남문'),
+ westGate:names('西门','West Gate','西門','Западные ворота','Porte ouest','서문'),
+ eastGate:names('东门','East Gate','東門','Восточные ворота','Porte est','동문'),
+ soccer:names('足球场（第一运动场）','Football Field (First Sports Ground)','サッカー場（第一運動場）','Футбольное поле (первый стадион)','Terrain de football (premier terrain de sport)','축구장 (제1운동장)'),
+ sports2:names('第二运动场','Second Sports Ground','第二運動場','Вторая спортивная площадка','Deuxième terrain de sport','제2운동장'),
+ arena:names('文体馆','Arts & Sports Hall','文体館','Культурно-спортивный комплекс','Centre culturel et sportif','문화체육관'),
+ pool:names('游泳馆','Swimming Pool','プール','Бассейн','Piscine','수영장'),
+ gym:names('篮球场','Basketball Court','バスケットボールコート','Баскетбольная площадка','Terrain de basket','농구장'),
+ activity:names('大学生活动中心','Student Activity Center','学生活動センター','Студенческий центр','Centre d’activités étudiantes','학생활동센터'),
+ canteen1:names('第一食堂','First Canteen','第一食堂','Столовая №1','Restaurant universitaire n° 1','제1식당'),
+ canteen2:names('第二食堂','Second Canteen','第二食堂','Столовая №2','Restaurant universitaire n° 2','제2식당'),
+ admin:names('校务楼','Administration Building','管理棟','Административный корпус','Bâtiment administratif','행정동'),
+ qizhi:names('启智楼','Qizhi Building','啓智楼','Корпус Цичжи','Bâtiment Qizhi','계지루'),
+ classroom:names('教学楼','Teaching Hall','教学棟','Учебный корпус','Bâtiment d’enseignement','강의동'),
+ lawn:names('草坪','Central Lawn','芝生広場','Центральная лужайка','Pelouse centrale','중앙 잔디밭'),
+ parking:names('停车场','Parking Area','駐車場','Парковка','Parking','주차장'),
+ bus:names('600公交车站','Bus Stop 600','600番バス停','Автобус №600','Arrêt bus 600','600번 버스 정류장'),
+ street:names('西外时光街','XISU Time Street','西外タイムストリート','Улица XISU Time','Rue XISU Time','서외 타임 스트리트')
+};
+NAMES.studentWalk=names('学子长廊','Student Promenade','学生回廊','Студенческая галерея','Galerie étudiante','학생 회랑');
+NAMES.northGate=names('北门','North Gate','北門','Северные ворота','Porte nord','북문');
+NAMES.admin=names('校务楼','University Administration','大学事務棟','Управление университета','Administration universitaire','대학 본부');
+const PLACES=[];
+function place(id,group,shape,entrance,road,mini,extra={}){PLACES.push({id,group,shape,entrance,road,mini,...extra});}
+const r=(x,y,w,h)=>({type:'rect',x,y,w,h});
+const poly=(points)=>({type:'poly',points});
+const path=(d)=>({type:'path',d});
+const ellipse=(cx,cy,rx,ry)=>({type:'ellipse',cx,cy,rx,ry});
+// Shapes and positions trace the FIRST school diagram (not the later illustrated image).
+// Coordinates are schematic map units, not GPS or real-world metres.
+place('soccer','sports',ellipse(335,359,108,50),[444,359],'westSports','soccer');
+place('sports2','sports',r(204,459,258,137),[465,535],'westSports','sports2');
+place('arena','sports',r(482,291,131,118),[620,349],'arenaLane','arena');
+place('pool','sports',r(482,409,131,68),[620,440],'arenaLane','pool');
+place('gym','sports',r(482,492,131,104),[622,540],'arenaLane','gym');
+place('activity','service',r(479,630,140,72),[619,682],'centralSpine','activity');
+place('canteen1','food',r(718,617,159,78),[714,654],'centralSpine','canteen1');
+place('canteen2','food',path('M880 1069 H966 V1148 H880 Z M893 1080 V1100 H951 V1080 Z M893 1116 V1136 H951 V1116 Z'),[966,1109],'eastSide','canteen2');
+place('library','service',path('M524 1080 H547 V1061 H633 V1080 H657 V1134 H633 V1127 H547 V1134 H524 Z'),[589,1143],'bottomWalk','library');
+place('admin','office',path('M740 1177 H794 V1230 H740 Z M751 1185 V1198 H783 V1185 Z M751 1207 V1221 H783 V1207 Z'),[740,1205],'adminLane','admin');
+place('qizhi','other',r(209,1178,215,53),[315,1169],'bottomWalk','qizhi');
+place('parking','other',r(425,1174,31,55),[462,1161],'bottomWalk','parking');
+place('apt8','dorm',r(895,1178,28,55),[928,1204],'eastSide','8');
+place('apt7','dorm',r(931,1178,30,55),[966,1204],'eastSide','7');
+place('hospital','service',r(63,926,72,70),[140,965],'outside','hospital');
+place('westGate','gate',r(643,244,78,35),[682,275],'centralSpine','westGate');
+place('southGate','gate',r(139,1143,36,33),[157,1160],'outside','southGate');
+place('eastGate','gate',r(560,1222,79,27),[599,1217],'eastEntrance','eastGate');
+place('studentWalk','service',r(512,789,126,24),[575,801],'studentWalk','studentWalk');
+place('northGate','gate',r(976,1150,24,25),[988,1162],'northSouthLink','northGate');
+place('lawn','sports',poly([[500,743],[638,743],[638,992],[560,991],[535,945],[519,897]]),[646,844],'centralSpine','lawn');
+// Six teaching buildings: A-F; three office wings: G-I.
+place('A','teaching',path('M498 1013 Q496 1070 470 1135 L432 1122 Q457 1060 460 1013 Z'),[487,1060],'centralBypass','JA');
+place('B','teaching',path('M475 819 Q516 890 498 975 L460 975 Q480 890 440 831 Z'),[497,910],'innerDiagonal','JB');
+place('C','teaching',path('M402 709 Q445 748 462 789 L429 801 Q411 758 373 732 Z'),[462,775],'innerDiagonal','JC');
+place('D','teaching',r(282,655,47,130),[282,733],'westInner','JD');
+place('E','teaching',r(282,819,47,156),[282,894],'westInner','JE');
+place('F','teaching',r(282,1013,47,134),[282,1085],'westInner','JF');
+place('I','office',path('M357 826 H411 V838 H426 V855 H411 V867 H357 V855 H350 V838 H357 Z'),[390,867],'officeIEntry','JI');
+place('H','office',path('M357 875 H420 V886 H440 V902 H420 V914 H357 V902 H350 V886 H357 Z'),[390,914],'officeHEntry','JH');
+place('G','office',path('M355 938 H431 V949 H447 V965 H431 V976 H355 V966 H350 V949 H355 Z'),[390,976],'officeGEntry','JG');
+place('S4','lab',poly([[202.0,800],[218.9,800],[218.9,785.45],[234.5,785.45],[234.5,793.9],[248.8,793.9],[248.8,718.5],[202.0,718.5]]),[228,790],'labUpperEntry','S4');
+place('S3','lab',poly([[202.0,800],[218.9,800],[218.9,814.55],[234.5,814.55],[234.5,806.1],[248.8,806.1],[248.8,881.5],[202.0,881.5]]),[228,810],'labUpperEntry','S3');
+place('S2','lab',poly([[202.0,994],[218.9,994],[218.9,980.45],[234.5,980.45],[234.5,988.9],[248.8,988.9],[248.8,913.5],[202.0,913.5]]),[228,985],'labLowerEntry','S2');
+place('S1','lab',poly([[202.0,994],[218.9,994],[218.9,1007.55],[234.5,1007.55],[234.5,999.1],[248.8,999.1],[248.8,1074.5],[202.0,1074.5]]),[228,1003],'labLowerEntry','S1');
+// Dormitory group, based on the first diagram.
+const DORM_ROWS=[{p:'6',y:281,letters:['A','C','B']},{p:'5',y:386,letters:['A','B']},{p:'4',y:492,letters:['A','B']},{p:'3',y:709,letters:['A','B','C']},{p:'2',y:832,letters:['A','B','C']},{p:'1',y:949,letters:['A','B','C']}];
+for(const row of DORM_ROWS){
+ for(const l of row.letters){let x=l==='A'?722:l==='C'?887:((row.p==='5'||row.p==='4')?887:813);
+  // 6C is the middle column, 6B is the right column; other B dorms may be in the middle.
+  if(row.p==='6'){x=l==='A'?722:l==='C'?813:887;}
+  const id=`${row.p}${l}`;const right=x+67;
+  let entrance,road;
+  if(l==='A'){entrance=[716,row.y+47];road='centralSpine';}
+  else if(x===813){entrance=[806,row.y+47];road='dormMid';}
+  else {entrance=[962,row.y+47];road='eastSide';}
+  place(id,'dorm',r(x,row.y,67,96),entrance,road,id);
+ }
+}
+function placeName(p,lang){
+ const b=nWord(p.id);if(b)return b[lang]||b.en;
+ if(/^[A-I]$/.test(p.id))return 'J'+p.id;
+if(p.id==='apt8' && lang==='zh') return '8号公寓';
+if(p.id==='apt7' && lang==='zh') return '7号公寓';
+if(p.group==='dorm'){
+  let translations={zh:`${p.id}宿舍`,en:`Dorm ${p.id}`,ja:`${p.id}号寮`,ru:`Общежитие ${p.id}`,fr:`Résidence ${p.id}`,ko:`${p.id} 기숙사`};return translations[lang];
+ }
+ if(p.group==='lab')return ({zh:`${p.id}实验楼`,en:`Lab ${p.id}`,ja:`${p.id}実験棟`,ru:`Лаборатория ${p.id}`,fr:`Laboratoire ${p.id}`,ko:`${p.id} 실험동`})[lang];
+ if(p.group==='office')return ({zh:`${p.id}办公楼`,en:`Office ${p.id}`,ja:`${p.id}事務棟`,ru:`Офис ${p.id}`,fr:`Bureau ${p.id}`,ko:`${p.id} 사무동`})[lang];
+ if(p.group==='teaching')return ({zh:`${p.id}教学楼`,en:`Teaching ${p.id}`,ja:`${p.id}教学棟`,ru:`Учебный корпус ${p.id}`,fr:`Bâtiment ${p.id}`,ko:`${p.id} 강의동`})[lang];
+ return p.id;
+}
+function label(p,lang){
+ if(/^[A-I]$/.test(p.id))return 'J'+p.id;
+ if(p.id==='studentWalk')return NAMES.studentWalk[lang];
+ if(p.id==='northGate')return NAMES.northGate[lang];
+ if(/^(?:S[1-4]|[1-6][ABC])$/.test(p.id))return p.mini;
+ const small={soccer:['足球场','Football','サッカー','Футбол','Football','축구장'],sports2:['第二运动场','Sports Ground','第二運動場','Спортплощадка','Terrain de sport','제2운동장'],arena:['文体馆','Sports Hall','文体館','Спортзал','Centre sportif','체육관'],pool:['游泳馆','Pool','プール','Бассейн','Piscine','수영장'],gym:['篮球场','Basketball','バスケット','Баскетбол','Basket','농구장'],activity:['大学生活动中心','Student Center','学生センター','Студцентр','Centre étudiant','학생센터'],canteen1:['第一食堂','Canteen 1','第一食堂','Столовая 1','Cantine 1','제1식당'],canteen2:['第二食堂','Canteen 2','第二食堂','Столовая 2','Cantine 2','제2식당'],library:['图书馆','Library','図書館','Библиотека','Bibliothèque','도서관'],admin:['校务楼','Administration','管理棟','Администрация','Administration','행정동'],qizhi:['启智楼','Qizhi','啓智楼','Цичжи','Qizhi','계지루'],classroom:['教学楼','Teaching Hall','教学棟','Учебный','Cours','강의동'],parking:['停车场','Parking','駐車場','Парковка','Parking','주차장'],hospital:['✚','✚','✚','✚','✚','✚'],westGate:['西门','West Gate','西門','Западные','Porte ouest','서문'],southGate:['南门','South Gate','南門','Южные','Porte sud','남문'],eastGate:['东门','East Gate','東門','Восточные','Porte est','동문'],lawn:['草坪','Lawn','芝生','Газон','Pelouse','잔디밭'],apt7:['7号公寓','Dorm 7','7号寮','Общ. 7','Rés. 7','7호'],apt8:['8号公寓','Dorm 8','8号寮','Общ. 8','Rés. 8','8호']};
+ return (small[p.id]||[])[['zh','en','ja','ru','fr','ko'].indexOf(lang)] ||p.mini;
+}
+// ---------- 2. Drawing-independent pedestrian network. ----------
+// Each path follows an approximate corridor visible on the initial school schematic.
+// Each access point connects to a named route; intersections are split automatically.
+const WALKS=[
+ {id:'teachingUpperCross',pts:[[260,801],[510,801],[681,801]]},
+ {id:'teachingLowerCross',pts:[[228,994],[522,994],[681,994]]},
+ {id:'labUpperEntry',pts:[[228,790],[228,810]]},
+ {id:'labUpperApproach',pts:[[228,801],[272,801]]},
+ {id:'labLowerEntry',pts:[[228,985],[228,1003]]},
+ {id:'officeIEntry',pts:[[344,870],[390,870],[390,867]]},
+ {id:'officeHEntry',pts:[[344,923],[390,923],[390,914]]},
+ {id:'officeGEntry',pts:[[344,986],[390,986],[390,976]]},
+ {id:'studentWalk',pts:[[461,801],[681,801]]},
+ {id:'northSouthLink',pts:[[158,1162],[681,1162],[988,1162]]},
+ {id:'canteenSouthLane',pts:[[866,1060],[866,1162]]},
+ {id:'adminLane',pts:[[725,1162],[725,1226],[970,1226],[970,1162]]},
+ {id:'centralSpine',pts:[[681,276],[681,1162]]},
+ {id:'westInner',pts:[[272,607],[272,1162]]},
+ {id:'leftService',pts:[[178,607],[178,1162]]},
+ {id:'westSports',pts:[[473,280],[473,607]]},
+ {id:'arenaLane',pts:[[627,280],[627,607]]},
+ {id:'officeLane',pts:[[344,801],[344,994]]},
+ {id:'innerDiagonal',pts:[[473,607],[473,688],[510,801],[530,910],[522,994],[557,1016],[681,1016]]},
+ {id:'centralBypass',pts:[[522,994],[507,1060],[507,1162]]},
+ {id:'dormMid',pts:[[803,278],[803,1061]]},
+ {id:'dormGap',pts:[[877,278],[877,1061]]},
+ {id:'eastSide',pts:[[970,278],[970,1219]]},
+ {id:'campusCross',pts:[[178,607],[272,607],[473,607],[627,607],[681,607]]},
+ {id:'upperSports',pts:[[473,485],[627,485],[681,485]]},
+ {id:'westHallConnect',pts:[[627,280],[681,280]]},
+ 
+ 
+ {id:'bottomWalk',pts:[[158,1162],[178,1162],[272,1162],[393,1162],[507,1162],[681,1162]]},
+ {id:'eastEntrance',pts:[[599,1162],[599,1232]]},
+ {id:'eastTopCross',pts:[[681,381],[803,381],[877,381],[970,381]]},
+ {id:'eastMidCross',pts:[[681,485],[803,485],[877,485],[970,485]]},
+ {id:'eastLowerCross1',pts:[[681,605],[803,605],[877,605],[970,605]]},
+ {id:'eastLowerCross2',pts:[[681,704],[803,704],[877,704],[970,704]]},
+ {id:'eastLowerCross3',pts:[[681,817],[803,817],[877,817],[970,817]]},
+ {id:'eastLowerCross4',pts:[[681,937],[803,937],[877,937],[970,937]]},
+ {id:'eastBottomCross',pts:[[681,1060],[803,1060],[877,1060],[970,1060]]},
+ {id:'outside',pts:[[158,1162],[145,1162],[145,965],[140,965]]},
+ // Gentle contour following the lawn's western border, represented as a walking aisle.
+ {id:'lawnWalk',pts:[[510,801],[530,910],[522,994],[557,1016]]}
+];
+// walk nodes are constructed using segment intersections + entrance projections.
+const EPS=1e-6, K=p=>`${Math.round(p[0]*1000)/1000},${Math.round(p[1]*1000)/1000}`;
+const vec=(p,q)=>[q[0]-p[0],q[1]-p[1]];const cross=(p,q)=>p[0]*q[1]-p[1]*q[0];
+const dot=(p,q)=>p[0]*q[0]+p[1]*q[1];
+const d2=(p,q)=>(p[0]-q[0])**2+(p[1]-q[1])**2;
+const inside01=t=>t>-EPS && t<1+EPS;
+const segments=[];
+for(const road of WALKS)for(let i=1;i<road.pts.length;i++)segments.push({road:road.id,a:road.pts[i-1],b:road.pts[i],cuts:[{t:0,p:road.pts[i-1]},{t:1,p:road.pts[i]}]});
+function addCut(s,t){if(inside01(t)){const tt=Math.max(0,Math.min(1,t));s.cuts.push({t:tt,p:[s.a[0]+(s.b[0]-s.a[0])*tt,s.a[1]+(s.b[1]-s.a[1])*tt]});}}
+function segmentCross(a,b){
+ const r=vec(a.a,a.b),s=vec(b.a,b.b),qp=vec(a.a,b.a),den=cross(r,s);
+ if(Math.abs(den)>EPS){let t=cross(qp,s)/den,u=cross(qp,r)/den;if(inside01(t)&&inside01(u)){addCut(a,t);addCut(b,u);}return;}
+ if(Math.abs(cross(qp,r))>EPS)return;
+ const rr=dot(r,r),ss=dot(s,s);
+ if(rr<EPS||ss<EPS)return;
+ for(const p of [b.a,b.b])addCut(a,dot(vec(a.a,p),r)/rr);
+ for(const p of [a.a,a.b])addCut(b,dot(vec(b.a,p),s)/ss);
+}
+for(let i=0;i<segments.length;i++)for(let j=i+1;j<segments.length;j++)segmentCross(segments[i],segments[j]);
+const attachments=new Map();
+for(const p of PLACES){
+ const related=segments.filter(x=>x.road===p.road);let best=null;
+ for(const s of related){const v=vec(s.a,s.b),tt=Math.min(1,Math.max(0,dot(vec(s.a,p.entrance),v)/dot(v,v)));const pos=[s.a[0]+v[0]*tt,s.a[1]+v[1]*tt];let ds=d2(pos,p.entrance);if(!best||ds<best.ds)best={s,t:tt,pos,ds};}
+ if(!best)throw new Error('Missing road for '+p.id+': '+p.road);
+ addCut(best.s,best.t);attachments.set(p.id,best.pos);
+}
+const NET=new Map();
+function vertex(pt){let k=K(pt);if(!NET.has(k))NET.set(k,{pt,edges:new Map()});return k;}
+function link(a,b){const u=vertex(a),v=vertex(b),d=Math.sqrt(d2(a,b));if(u!==v&&d>EPS){NET.get(u).edges.set(v,d);NET.get(v).edges.set(u,d);}}
+for(const seg of segments){seg.cuts.sort((a,b)=>a.t-b.t);const cuts=[];for(const c of seg.cuts){if(!cuts.length||Math.abs(c.t-cuts.at(-1).t)>EPS)cuts.push(c);}for(let j=1;j<cuts.length;j++)link(cuts[j-1].p,cuts[j].p);}
+for(const p of PLACES)link(p.entrance,attachments.get(p.id));
+// Upper-floor links reported by the user; these do not create ground-level roads.
+const indoorChains=[
+ [[424,761],[445,789],[455,819],[466,846],[472,894],[475,957],[479,975],[479,1013],[469,1070]],
+ [[305,733],[305,846],[305,894],[305,957],[305,1085]],
+ [[305,846],[390,846],[466,846]],
+ [[305,894],[390,894],[472,894]],
+ [[305,957],[390,957],[475,957]]
+];
+for(const chain of indoorChains)for(let i=1;i<chain.length;i++)link(chain[i-1],chain[i]);
+for(const [id,pt] of [['C',[424,761]],['B',[472,894]],['A',[469,1070]],['D',[305,733]],['E',[305,894]],['F',[305,1085]],['I',[390,846]],['H',[390,894]],['G',[390,957]]])link(PLACES.find(p=>p.id===id).entrance,pt);
+function shortest(a,b){const from=K(a),to=K(b),dist=new Map([[from,0]]),previous=new Map(),used=new Set();const heap=[[0,from]];
+ // Small network: a simple priority queue is sufficient here.
+ while(heap.length){heap.sort((x,y)=>y[0]-x[0]);const [d,u]=heap.pop();if(used.has(u))continue;used.add(u);if(u===to)break;for(const [v,w] of NET.get(u)?.edges||[]){if(d+w<(dist.get(v)??Infinity)){dist.set(v,d+w);previous.set(v,u);heap.push([d+w,v]);}}}
+ if(!dist.has(to))return [];
+ let path=[],at=to;while(at){path.unshift(NET.get(at).pt);if(at===from)break;at=previous.get(at);}
+ return K(path[0])===from?path:[];
+}
+// ---------- 2b. Editable place-detail knowledge for the right-hand panel. ----------
+// These are schematic-use descriptions, not verified hours, real entrance directions or accessibility claims.
+// Add or edit a location here without touching its SVG geometry or routing data.
+const PLACE_DETAILS = {
+ sports2:names('第二运动场。西外时光街位于运动场地下，出入口在图示矩形右侧；地图名称标在场地内部右边缘。','Second Sports Ground. XISU Time Street is underneath the ground, with access on its right edge in this map.','西外タイムストリートは運動場の地下にあり、入口は図の右側です。','Улица XISU Time расположена под площадкой; вход справа на плане.','La rue XISU Time se situe sous le terrain, avec une entrée à droite sur le plan.','서외 타임 스트리트는 운동장 지하에 있으며 입구는 지도 오른쪽입니다.'),
+ I:{zh:'JI 南侧（图中左侧）连廊连接 JE，北侧（图中右侧）连廊连接 JB。连廊位于楼上，地面通路独立。'},
+ H:{zh:'JH 通过左右两侧连廊分别连接 JE 与 JB。'},
+ G:{zh:'JG 通过左右两侧连廊分别连接 JE 与 JB。'},
+ studentWalk:names('学子长廊从 JC、JB 交接处向北延伸（图中向右），贯通草坪并连接崇德路，已纳入示意步行路网。','The promenade runs north (right on this map) from the JC/JB junction across the lawn to Chongde Road.','JC・JBの接続部から北（図の右）へ芝生を横断し崇徳路へ続く回廊です。','Галерея идёт на север (вправо на плане) от стыка JC/JB через газон к улице Чундэ.','La galerie traverse la pelouse vers le nord (à droite), de la jonction JC/JB à l’allée Chongde.','JC·JB 연결부에서 북쪽(지도 오른쪽)으로 잔디밭을 가로질러 숭덕로와 이어집니다.'),
+ library:{zh:'图书馆位于校园教学区附近。点击下方按钮，可将这里设置为导航起点或终点。',en:'The library is shown near the teaching area. Use the buttons below to make it a route start or destination.',ja:'図書館は教学エリアの近くに表示されています。下のボタンで出発地または目的地に設定できます。',ru:'Библиотека отмечена рядом с учебной зоной. Ниже её можно выбрать началом или концом маршрута.',fr:'La bibliothèque figure près de la zone d’enseignement. Vous pouvez la choisir comme départ ou destination.',ko:'도서관은 강의 구역 근처에 표시되어 있습니다. 아래 버튼으로 출발지 또는 도착지로 지정할 수 있습니다.'},
+ hospital:{zh:'校医院在校园南门外。示意路线需要经过南门；校外道路、医院实际入口及开放时间必须另外核实。',en:'The campus medical center is outside the South Gate. The schematic route passes through that gate; verify the outdoor path, entrance and opening hours.',ja:'大学診療所は南門の外にあります。図示ルートは南門を通りますが、学外の道・入口・開院時間は要確認です。',ru:'Медпункт находится за Южными воротами. Схематичный путь проходит через них; проверьте вход, дорожку и часы работы.',fr:'Le centre médical se trouve hors du campus, après la porte sud. L’itinéraire, l’entrée et les horaires doivent être vérifiés.',ko:'보건소는 남문 밖에 있습니다. 안내 경로는 남문을 통과하며, 외부 보행로·출입구·운영 시간은 현장 확인이 필요합니다.'},
+ canteen1:{zh:'第一食堂位于图示宿舍区附近。餐饮服务的具体营业时间和出入口请以现场信息为准。',en:'The first canteen is marked near the dormitory area. Check its actual entrance and opening hours on site.',ja:'第一食堂は学生寮エリアの近くにあります。入口と営業時間は現地でご確認ください。',ru:'Первая столовая отмечена рядом с общежитиями. Уточняйте вход и часы работы на месте.',fr:'Le premier restaurant universitaire est indiqué près des résidences. Vérifiez l’entrée et les horaires sur place.',ko:'제1식당은 기숙사 구역 근처에 표시됩니다. 출입구와 운영 시간은 현장에서 확인하세요.'},
+ canteen2:{zh:'第二食堂位于校园图示下方、宿舍区旁。具体出入口和营业信息待核验。',en:'The second canteen is shown along the lower edge of the campus plan, by the dorms. Entrances and hours need verification.',ja:'第二食堂は案内図の下部、寮の近くに表示されています。入口と営業時間は要確認です。',ru:'Вторая столовая показана в нижней части плана рядом с общежитиями. Вход и режим работы уточняйте.',fr:'Le second restaurant est situé en bas du plan, près des résidences. L’entrée et les horaires sont à confirmer.',ko:'제2식당은 지도 하단 기숙사 부근에 표시되어 있습니다. 출입구와 운영 시간은 확인이 필요합니다.'},
+ southGate:{zh:'校园图左下侧的南门。前往校外校医院的示意路线会经过此处。校门实际通行规则待核验。',en:'The South Gate is at the lower-left of this campus schematic. Routes to the off-campus medical center pass here; check gate access on site.',ja:'南門は案内図の左下にあります。学外の診療所へ向かう経路はここを通ります。通行状況は要確認です。',ru:'Южные ворота показаны слева внизу плана; маршрут к медпункту проходит здесь. Уточните доступность прохода.',fr:'La porte sud se trouve en bas à gauche du plan. L’itinéraire vers le centre médical y passe; accès à vérifier.',ko:'남문은 지도 왼쪽 아래에 표시됩니다. 교외 보건소로 가는 안내 경로가 이곳을 통과하며 실제 통행 여부는 확인이 필요합니다.'}
+};
+const GROUP_DESCRIPTIONS = {
+ zh:{teaching:'校园教学建筑。地图标注了楼号；具体出入口、楼层和教室信息待补充。',office:'校园办公建筑。具体部门和办公时间须根据学校官方资料补充。',lab:'校园实验楼。实验室、楼层和开放权限须另外确认。',dorm:'校园宿舍楼。出入条件和访客规定请以学校通知为准。',food:'校园餐饮设施。营业时间、服务内容和出入口待实地确认。',sports:'校园运动或绿地设施。具体开放安排待确认。',service:'校园公共服务设施。可作为导航起点或终点。',gate:'校园出入口。通行规则和开放时间须现场确认。',other:'校园公共设施。进一步详情可在知识库中补充。'},
+ en:{teaching:'Academic building. Floor, room and entrance details require confirmation.',office:'Office building. Departments and opening hours should be added from official campus information.',lab:'Laboratory building. Room access and opening rules need verification.',dorm:'Student accommodation. Please check access and visitor rules with the university.',food:'Dining facility. Check opening hours and entrances on site.',sports:'Sports or outdoor area. Access arrangements require confirmation.',service:'Campus facility. You can set it as your start or destination.',gate:'Campus gate. Access and opening times need on-site confirmation.',other:'Campus facility. Further details can be added to the knowledge base.'},
+ ja:{teaching:'教学施設です。教室・階数・入口の詳細は確認が必要です。',office:'事務施設です。部署と業務時間は学校情報を確認してください。',lab:'実験施設です。入室条件は要確認です。',dorm:'学生寮です。入館条件をご確認ください。',food:'食堂です。営業時間と入口は現地でご確認ください。',sports:'運動・緑地施設です。利用条件は要確認です。',service:'キャンパス施設です。出発地・目的地に設定できます。',gate:'キャンパスの門です。開放時間は要確認です。',other:'キャンパス施設です。詳しい情報は今後追加できます。'},
+ ru:{teaching:'Учебный корпус. Номера аудиторий и входы требуют проверки.',office:'Административный корпус. Отделы и часы работы следует уточнить.',lab:'Лабораторный корпус. Правила доступа требуют проверки.',dorm:'Общежитие. Уточняйте правила входа и посещения.',food:'Столовая. Часы работы и вход уточняйте на месте.',sports:'Спортивная или зелёная зона. Условия доступа требуют проверки.',service:'Объект кампуса. Можно выбрать началом или концом маршрута.',gate:'Ворота кампуса. Уточняйте режим прохода.',other:'Объект кампуса. Подробности можно добавить позже.'},
+ fr:{teaching:'Bâtiment d’enseignement. Salles, étages et entrées à confirmer.',office:'Bâtiment administratif. Services et horaires à vérifier.',lab:'Laboratoires. Conditions d’accès à confirmer.',dorm:'Résidence étudiante. Vérifiez les règles d’accès.',food:'Restauration. Entrées et horaires à confirmer.',sports:'Espace sportif ou vert. Accès à vérifier.',service:'Service du campus. Sélectionnable comme départ ou destination.',gate:'Porte du campus. Horaires et accès à vérifier.',other:'Équipement du campus. Informations à compléter.'},
+ ko:{teaching:'강의 건물입니다. 강의실·층수·출입구 정보는 확인이 필요합니다.',office:'사무 건물입니다. 부서와 업무 시간은 확인이 필요합니다.',lab:'실험실 건물입니다. 출입 규정을 확인하세요.',dorm:'기숙사입니다. 출입 및 방문 규정을 확인하세요.',food:'교내 식당입니다. 운영 시간과 출입구는 현장 확인이 필요합니다.',sports:'운동·녹지 시설입니다. 이용 안내를 확인하세요.',service:'교내 시설입니다. 출발지 또는 도착지로 설정할 수 있습니다.',gate:'캠퍼스 출입문입니다. 통행 규정을 확인하세요.',other:'교내 시설입니다. 상세 정보는 추후 추가할 수 있습니다.'}
+};
+// ---------- 3. SVG rendering + interactions. ----------
+const S='http://www.w3.org/2000/svg';function E(tag,attrs={},parent=null,content=null){const e=document.createElementNS(S,tag);for(const [k,v]of Object.entries(attrs))e.setAttribute(k,v);if(content!==null)e.textContent=content;if(parent)parent.appendChild(e);return e;}
+const svg=document.getElementById('campus'),start=document.getElementById('start'),end=document.getElementById('end'),langSelect=document.getElementById('lang');
+let lang='zh',selected='library',routePts=[],startId='library',endId='hospital',activeLayer,view={x:0,y:0,w:1056,h:1408},drag=null;
+const pmap=new Map(PLACES.map(p=>[p.id,p]));
+function vbox(){svg.setAttribute('viewBox',`${view.x} ${view.y} ${view.w} ${view.h}`);}
+function text(x,y,str,cls,parent,sz){return E('text',{x,y,class:cls,...(sz?{'font-size':sz}:{})},parent,str);}
+function shape(parent,kind,opts={}){return E(kind,opts,parent);}
+function linePath(points){return points.map((p,i)=>(i?'L':'M')+p[0]+' '+p[1]).join(' ');}
+function road(g,pts,width=12){E('path',{d:linePath(pts),fill:'none',stroke:'#d3c5a6','stroke-width':width+2,'stroke-linecap':'round','stroke-linejoin':'round'},g);E('path',{d:linePath(pts),fill:'none',stroke:'#faf4df','stroke-width':width,'stroke-linecap':'round','stroke-linejoin':'round'},g);}
+function drawBackground(){const g=E('g',{},svg);
+ E('rect',{x:0,y:0,width:1056,height:1408,fill:'#f6f8f1'},g);
+ E('rect',{x:162,y:260,width:825,height:985,rx:7,fill:'#fafaf4'},g);
+ // Local street outside the South Gate connecting to the hospital; not a verified public walkway.
+ road(g,[[144,965],[144,1161],[159,1161]],14);
+ // Deep-colored campus perimeter is interrupted at gate apertures.
+ for(const d of ['M161 1145 V262 H639','M721 262 H988 V1148 M988 1177 V1244 H723','M515 1244 H161 V1174'])E('path',{d,stroke:'#71857f','stroke-width':7,fill:'none','stroke-linecap':'square'},g);
+ // Main pale campus walkways, guided by the first school diagram.
+ for(const r of WALKS){if(['outside'].includes(r.id))continue;road(g,r.pts,r.id==='centralSpine'?12:r.id==='campusCross'?11:9);}
+ // landscaped plots: accurate to relative position; ornamental details are illustrative.
+ const greens=[{d:'M195 302 H455 V427 H195 Z'},{d:'M196 451 H467 V601 H196 Z'},{d:'M476 286 H623 V606 H476 Z'},{d:'M696 279 H964 V600 H696 Z'},{d:'M693 701 H969 V1051 H693 Z'},{d:'M499 743 L637 743 L637 992 L561 991 L535 946 L516 901 Z'},{d:'M171 638 H265 V1146 H171 Z'},{d:'M336 646 H470 V789 H336 Z'},{d:'M505 1019 H665 V1153 H505 Z'},{d:'M705 1115 H972 V1220 H705 Z'}];
+ // greenery goes beneath buildings, but below walkway overlays so paths remain legible.
+ const greenGroup=E('g',{opacity:.85},g);for(const p of greens)E('path',{d:p.d,fill:'#d8f0dc',stroke:'#c7e1cc','stroke-width':1},greenGroup);
+ // Roadways are redrawn over grass to show intentional pedestrian corridors.
+ for(const r of WALKS){if(['outside'].includes(r.id))continue;road(g,r.pts,r.id==='centralSpine'?12:9);}
+ const treePositions=[[260,420],[442,425],[318,645],[382,654],[527,731],[651,606],[947,598],[920,704],[954,816],[928,938],[726,1100],[815,1218],[199,1110],[371,1151],[607,756],[604,974]];
+ for(const [x,y]of treePositions){E('circle',{cx:x,cy:y,r:9,fill:'#81b995',opacity:.75},g);E('circle',{cx:x-3,cy:y-4,r:5,fill:'#acd7aa'},g);}
+ // Graphically recognizable outdoor areas
+ E('ellipse',{cx:335,cy:359,rx:113,ry:54,fill:'#cce8dc',stroke:'#9abf9f','stroke-width':2},g);
+ E('rect',{x:286,y:326,width:97,height:64,rx:3,fill:'#8bd9b4'},g);
+ E('rect',{x:313,y:333,width:45,height:50,rx:2,fill:'none',stroke:'#f0ffed','stroke-width':2},g);
+ E('path',{d:'M335 333 V383 M313 358 H358',stroke:'#f5fffa','stroke-width':2},g);
+ E('rect',{x:211,y:468,width:244,height:120,rx:5,fill:'#a6e5c1'},g);
+ E('path',{d:'M245 481 V577 H420 V481 Z',stroke:'#ffffff',fill:'none','stroke-width':2,'opacity':.65},g);
+ E('rect',{x:512,y:1036,width:148,height:18,fill:'#d7e7d9',rx:3},g);
+ // West gate upper entrance opening; East gate lower entrance.
+ E('rect',{x:640,y:250,width:81,height:21,fill:'#fafaf4'},g);
+ E('rect',{x:515,y:1238,width:208,height:18,fill:'#fafaf4'},g);
+ // Minimal compass: on the provided first drawing, upward points WEST, not North.
+ E('path',{d:'M909 205 L899 234 L909 227 L919 234 Z',fill:'#bb5341'},g);
+ text(909,193,UI[lang].west,'mapTag',g,15);text(961,225,UI[lang].north+' →','mapTag',g,15);
+ const roadWords={zh:'崇德路',en:'Chongde Road',ja:'崇徳路',ru:'Улица Чундэ',fr:'Allée Chongde',ko:'숭덕로'};
+ const rt=text(667,845,roadWords[lang],'mapTag',g,12);rt.setAttribute('transform','rotate(90 667 845)');
+ text(617,1395,lang==='zh'?'示意图 · 非比例尺':lang==='en'?'SCHEMATIC · NOT TO SCALE':'SCHEMATIC', 'mapTag',g,13);
+}
+function drawPlace(p){const gg=E('g',{'data-place':p.id,role:'button',tabindex:'0','aria-label':placeName(p,lang),'aria-pressed':selected===p.id?'true':'false'},activeLayer);
+ let typ=p.group==='gate'?'other':p.group;let classes='building '+typ+(startId===p.id?' selected-start':'')+(endId===p.id?' selected-end':'')+(selected===p.id?' selected-active':'');
+ const s=p.shape;let attrs={class:classes,'fill-rule':'evenodd'};
+ if(s.type==='rect')Object.assign(attrs,{x:s.x,y:s.y,width:s.w,height:s.h,rx:p.group==='dorm'?2:1});
+ else if(s.type==='poly')attrs.points=s.points.map(x=>x.join(',')).join(' ');
+ else if(s.type==='path')attrs.d=s.d;
+ else if(s.type==='ellipse')Object.assign(attrs,{cx:s.cx,cy:s.cy,rx:s.rx,ry:s.ry});
+ E(s.type==='poly'?'polygon':s.type==='path'?'path':s.type==='ellipse'?'ellipse':'rect',attrs,gg);
+ if(s.type==='rect'&&p.group==='dorm'){E('rect',{x:s.x+6,y:s.y+7,width:s.w-12,height:s.h-14,fill:'none',stroke:'#eff8ee','stroke-width':2,'pointer-events':'none'},gg);}
+ if(p.id==='lawn'){const paths=E('g',{'pointer-events':'none'},gg);road(paths,[[510,801],[638,801]],10);road(paths,[[557,994],[638,994]],10);}
+ if(p.id==='studentWalk'){
+ E('path',{d:'M512 793 H638 M512 809 H638',stroke:'#bba779','stroke-width':2,'pointer-events':'none'},gg);
+ for(const x of [514,534,554,574,594,614,636])for(const y of [791,811])E('rect',{x:x-2,y:y-2,width:4,height:4,fill:'#a7946e','pointer-events':'none'},gg);
+ }
+ if(p.id==='activity'){
+  for(const x of [510,537,564,591])E('rect',{x,y:643,width:16,height:9,fill:'#edf5f2','pointer-events':'none'},gg);
+  const subs={zh:['学生事务大厅','卡务中心'],en:['Student Services','Card Center'],ja:['学生窓口','カード窓口'],ru:['Служба студентов','Карты'],fr:['Services étudiants','Cartes'],ko:['학생 서비스','카드 센터']}[lang];
+  subs.forEach((word,i)=>{const t=text(i?609:489,666,word,'sub-label',gg);if(['zh','ja','ko'].includes(lang))t.setAttribute('style','writing-mode:vertical-rl;font-size:10px');else t.setAttribute('transform',`rotate(90 ${i?609:489} 666)`);});
+ }
+ if(p.id==='sports2'){E('path',{d:'M458 530 H464 M458 536 H464 M458 542 H464',stroke:'#6b826e','stroke-width':2,'pointer-events':'none'},gg);const t=text(451,530,NAMES.street[lang],'sub-label',gg);if(['zh','ja','ko'].includes(lang))t.setAttribute('style','writing-mode:vertical-rl;font-size:11px');else t.setAttribute('transform','rotate(90 451 530)');}
+ if(p.id==='gym'){E('path',{d:'M495 502 H600 V585 H495 Z M547 502 V585',fill:'none',stroke:'#f5fff8','stroke-width':2,'pointer-events':'none'},gg);E('circle',{cx:547,cy:543,r:13,fill:'none',stroke:'#f5fff8','pointer-events':'none'},gg);}
+ if(p.id==='hospital'){E('rect',{x:92,y:943,width:15,height:39,fill:'#cc494a','pointer-events':'none'},gg);E('rect',{x:80,y:955,width:39,height:15,fill:'#cc494a','pointer-events':'none'},gg);}
+ if(p.id==='library'){E('rect',{x:552,y:1071,width:75,height:7,fill:'#b4d4d9','pointer-events':'none'},gg);}
+ const rectCenter=s.type==='rect'?[s.x+s.w/2,s.y+s.h/2]:s.type==='ellipse'?[s.cx,s.cy]:null;
+ const labels={hospital:[100,1016],southGate:[110,1161],westGate:[681,231],eastGate:[599,1277],lawn:[581,875],library:[590,1103],admin:[821,1205],qizhi:[315,1204],parking:[442,1207],classroom:[393,1070],activity:[549,669],canteen1:[800,648],canteen2:[923,1108],sports2:[333,533],soccer:[335,360],arena:[547,352],pool:[547,440],gym:[547,546],A:[469,1070],B:[480,915],C:[424,761],D:[305,722],E:[305,899],F:[305,1082],G:[390,955],H:[390,891],I:[390,844],S1:[228,1035.83],S2:[228,952.17],S3:[228,842.83],S4:[228,757.17],apt7:[946,1205],apt8:[909,1205]};
+ labels.northGate=[1022,1162];labels.studentWalk=[575,801];
+ const pos=labels[p.id]||rectCenter||p.entrance;let txt=label(p,lang);const code=/^(?:[A-I]|S[1-4]|[1-6][ABC])$/.test(p.id)||['apt7','apt8'].includes(p.id);
+ let cl='place-label '+(code?'code':txt.length>13?'tiny':txt.length>8?'small':'');
+ if(p.id==='hospital')cl+=' light';
+ const te=text(pos[0],pos[1],txt,cl,gg,code?17:(txt.length>14?11:txt.length>10?12:14));
+ if(p.id==='activity')te.setAttribute('style','font-size:12px');
+ if(['apt7','apt8'].includes(p.id)){
+ te.setAttribute('style','font-size:11px;'+(['zh','ja','ko'].includes(lang)?'writing-mode:vertical-rl;text-orientation:upright;':''));
+ if(!['zh','ja','ko'].includes(lang))te.setAttribute('transform',`rotate(90 ${pos[0]} ${pos[1]})`);
+ }
+ if(p.id==='soccer'){te.setAttribute('y',350);const alias={zh:'第一运动场',en:'First Sports Ground',ja:'第一運動場',ru:'Первый стадион',fr:'Premier terrain de sport',ko:'제1운동장'};text(335,373,alias[lang],'place-label small',gg);}
+ if(p.id==='hospital')te.setAttribute('stroke','#ffffff');
+ E('title',{},gg,placeName(p,lang));
+ gg.addEventListener('click',()=>{selected=p.id;showDetail();drawMap();});
+ gg.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();selected=p.id;showDetail();drawMap();}});
+}
+function drawSkybridges(){const g=E('g',{'pointer-events':'none','aria-label':'Upper-floor connecting corridors'},svg);
+ const bridges=['M299 785 H311 V819 H299 Z','M299 975 H311 V1013 H299 Z','M439 791 L451 787 L462 823 L450 827 Z','M473 975 H485 V1013 H473 Z',
+ 'M329 840 H466 V852 H329 Z','M329 888 H477 V900 H329 Z','M329 951 H480 V963 H329 Z'];
+ for(const d of bridges){E('path',{d,fill:'#d7c49b',stroke:'#9e8257','stroke-width':1.5},g);}
+}
+function drawMap(){svg.replaceChildren();drawBackground();drawSkybridges();activeLayer=E('g',{},svg);for(const p of PLACES.filter(p=>p.id!=='studentWalk'))drawPlace(p);drawPlace(pmap.get('studentWalk'));
+ if(routePts.length){const g=E('g',{'pointer-events':'none'},svg);E('path',{d:linePath(routePts),class:'route'},g);
+ for(const [p,color]of [[routePts[0],'#10957b'],[routePts.at(-1),'#dd6541']]){E('circle',{cx:p[0],cy:p[1],r:12,fill:color,class:'map-pin'},g);}
+ }
+ vbox();}
+function setText(id,s){document.getElementById(id).textContent=s;}
+function category(group){const t=UI[lang];return ({teaching:t.teach,lab:lang==='zh'?'实验楼':t.teach,office:t.office,dorm:t.dorm,service:t.service,food:lang==='zh'?'食堂':t.service,sports:lang==='zh'?'运动与绿地':t.green,other:t.service,gate:t.gate})[group];}
+function showDetail(){const t=UI[lang],p=pmap.get(selected);if(!p)return;
+ setText('detailHead',t.detail);
+ const panel=document.getElementById('detail');panel.replaceChildren();
+ const name=document.createElement('div');name.className='detail-name';name.textContent=placeName(p,lang);panel.append(name);
+ const chip=document.createElement('span');chip.className='chip';chip.textContent=category(p.group);panel.append(chip);
+ const code=document.createElement('p');code.className='place-code';code.textContent='ID: '+p.id;panel.append(code);
+ const desc=document.createElement('p');desc.className='place-desc';desc.textContent=PLACE_DETAILS[p.id]?.[lang] || GROUP_DESCRIPTIONS[lang]?.[p.group] || t.verify;panel.append(desc);
+ const status=document.createElement('p');status.className='place-status';status.textContent=t.verify;panel.append(status);
+ setText('setStart',t.setStart);setText('setEnd',t.setEnd);
+ const photo=document.getElementById('photo'),box=document.getElementById('photoBox');box.style.display='none';
+ // Add a real photo as photos/<location-id>.jpg. Missing photos are intentionally hidden.
+ photo.onerror=()=>box.style.display='none';photo.onload=()=>{box.style.display='block';photo.alt=placeName(p,lang);};photo.src='photos/'+p.id+'.jpg';
+}
+function updateSelects(){const olds=[start.value||startId,end.value||endId];for(const s of [start,end]){s.replaceChildren();for(const p of PLACES){const op=document.createElement('option');op.value=p.id;op.textContent=placeName(p,lang);s.append(op);}}start.value=olds[0];end.value=olds[1];}
+function updateLabels(){const t=UI[lang];for(const [id,v]of [['subtitle',t.subtitle],['badge',t.badge],['startLab',t.start],['endLab',t.end],['langLab',t.lang],['routeBtn',t.route],['typeTeach',t.teach],['typeOffice',t.office],['typeDorm',t.dorm],['typeService',t.service],['typeGreen',t.green],['usageHead',t.helpHead],['help',t.help],['disclaimer',t.disclaimer]])setText(id,v);updateSelects();showDetail();}
+function navigate(focus=false){startId=start.value;endId=end.value;const t=UI[lang];const a=pmap.get(startId),b=pmap.get(endId);if(!a||!b){routePts=[];setText('routeInfo',t.none);drawMap();return;}
+ if(startId===endId){routePts=[];setText('routeInfo',t.same);drawMap();return;}
+ routePts=shortest(a.entrance,b.entrance);
+ if(!routePts.length){setText('routeInfo',t.none);drawMap();return;}
+ const indoorNote={zh:'路线可能经过楼上连廊；连廊与下方地面通路分层，具体楼层与出入口待确认。',en:'Connected teaching wings may use indoor links; floors and entrances need confirmation.',ja:'連結教学棟の経路は館内通路を含む場合があります。',ru:'Маршрут между соединёнными корпусами может включать внутренние переходы.',fr:'Les ailes reliées peuvent emprunter des passages intérieurs.',ko:'연결 강의동 경로에는 실내 통로가 포함될 수 있습니다.'};
+ const indoorTrip=routePts.some(pt=>indoorChains.some(c=>c.some(v=>K(v)===K(pt))));
+ const hospitalTrip=(startId==='hospital'&&endId!=='southGate')||(endId==='hospital'&&startId!=='southGate');
+ setText('routeInfo',`${t.success}: ${placeName(a,lang)} → ${placeName(b,lang)} · ${t.steps}: ${routePts.length}. ${hospitalTrip?t.viaSouth+' ':''}${t.routeInfo}${indoorTrip?' '+indoorNote[lang]:''}`);
+ drawMap();if(focus)fitPath(routePts);
+}
+function fitPath(pts){if(!pts?.length)return;let xs=pts.map(p=>p[0]),ys=pts.map(p=>p[1]);let xmin=Math.min(...xs)-95,xmax=Math.max(...xs)+95,ymin=Math.min(...ys)-115,ymax=Math.max(...ys)+115;setViewFit(xmin,ymin,xmax,ymax);}
+function setViewFit(xmin,ymin,xmax,ymax){const box=document.getElementById('viewport').getBoundingClientRect(),aspect=box.width/box.height;let w=xmax-xmin,h=ymax-ymin;if(w/h<aspect){let diff=h*aspect-w;xmin-=diff/2;xmax+=diff/2;}else{let diff=w/aspect-h;ymin-=diff/2;ymax+=diff/2;}view={x:xmin,y:ymin,w:xmax-xmin,h:ymax-ymin};vbox();}
+function zoom(factor,cx=view.x+view.w/2,cy=view.y+view.h/2){const nw=Math.max(120,Math.min(1450,view.w*factor)),nh=view.h*nw/view.w;let rx=(cx-view.x)/view.w,ry=(cy-view.y)/view.h;view={x:cx-nw*rx,y:cy-nh*ry,w:nw,h:nh};vbox();}
+const viewport=document.getElementById('viewport');
+function pointerMap(e){const pt=svg.createSVGPoint();pt.x=e.clientX;pt.y=e.clientY;const mat=svg.getScreenCTM();if(!mat)return[view.x+view.w/2,view.y+view.h/2];const p=pt.matrixTransform(mat.inverse());return[p.x,p.y];}
+viewport.addEventListener('wheel',e=>{e.preventDefault();const p=pointerMap(e);zoom(e.deltaY>0?1.16:1/1.16,p[0],p[1]);},{passive:false});
+// Pointer capture must NOT happen on pointerdown: doing so steals clicks from SVG buildings.
+// Only begin panning and capture the pointer after a real movement (>6 screen pixels).
+const DRAG_THRESHOLD=6;
+viewport.addEventListener('pointerdown',e=>{
+ if(e.pointerType==='mouse'&&e.button!==0)return;
+ drag={id:e.pointerId,x:e.clientX,y:e.clientY,start:{...view},moved:false};
+});
+viewport.addEventListener('pointermove',e=>{
+ if(!drag||e.pointerId!==drag.id)return;
+ const dx=e.clientX-drag.x,dy=e.clientY-drag.y;
+ if(!drag.moved && Math.hypot(dx,dy)<DRAG_THRESHOLD)return;
+ if(!drag.moved){drag.moved=true;viewport.setPointerCapture(e.pointerId);}
+ const rect=svg.getBoundingClientRect(),sx=drag.start.w/rect.width,sy=drag.start.h/rect.height;
+ view.x=drag.start.x-dx*sx;view.y=drag.start.y-dy*sy;vbox();
+});
+viewport.addEventListener('pointerup',e=>{if(drag?.id===e.pointerId)drag=null;});
+viewport.addEventListener('pointercancel',e=>{if(drag?.id===e.pointerId)drag=null;});
+document.getElementById('plus').onclick=()=>zoom(.78);document.getElementById('minus').onclick=()=>zoom(1.28);document.getElementById('reset').onclick=()=>{view={x:0,y:0,w:1056,h:1408};vbox();};
+document.getElementById('routeBtn').onclick=()=>navigate(true);start.onchange=()=>navigate(false);end.onchange=()=>navigate(false);
+langSelect.onchange=()=>{lang=langSelect.value;updateLabels();navigate(false);};
+document.getElementById('setStart').onclick=()=>{start.value=selected;navigate(true);};document.getElementById('setEnd').onclick=()=>{end.value=selected;navigate(true);};
+// Coze links: ?from=library&to=hospital&lang=en
+const query=new URLSearchParams(location.search);let qlang=query.get('lang');if(UI[qlang])lang=qlang;langSelect.value=lang;
+updateSelects();const alias=id=>/^J[A-I]$/.test(id||'')?id.slice(1):id;const urlFrom=alias(query.get('from')),urlTo=alias(query.get('to'));
+if(pmap.has(urlFrom))start.value=urlFrom;else start.value='library';
+if(pmap.has(urlTo))end.value=urlTo;else end.value='hospital';
+updateLabels();navigate(false);
+// Structural self-checks, accessible from the browser console.
+function audit(){let failures=[];for(const a of PLACES)for(const b of PLACES){if(a!==b&&!shortest(a.entrance,b.entrance).length)failures.push(a.id+' -> '+b.id);}return{places:PLACES.length,roadSegments:segments.length,vertices:NET.size,tests:PLACES.length*(PLACES.length-1),unreachable:failures.length,examples:failures.slice(0,10)};}
+window.campusAudit=audit;window.campusPlaces=PLACES;window.campusShortest=(a,b)=>shortest(pmap.get(a).entrance,pmap.get(b).entrance);
+const report=audit();if(report.unreachable){setText('error',`${report.unreachable} routes are disconnected; see campusAudit() in console.`);console.error(report);}else console.info('Campus routing connectivity OK:',report);
+</script>
+</body></html>
